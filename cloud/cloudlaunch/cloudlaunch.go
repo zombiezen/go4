@@ -34,6 +34,7 @@ import (
 	"time"
 
 	"go4.org/cloud/google/gceutil"
+	"go4.org/osutil"
 
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
@@ -247,7 +248,10 @@ func (cl *cloudLaunch) uploadBinary() {
 		},
 	}
 	w.CacheControl = "no-cache"
-	selfPath := getSelfPath()
+	selfPath, err := osutil.Executable()
+	if err != nil {
+		log.Fatal(err)
+	}
 	log.Printf("Uploading %q to %v", selfPath, cl.binaryURL())
 	f, err := os.Open(selfPath)
 	if err != nil {
@@ -262,17 +266,6 @@ func (cl *cloudLaunch) uploadBinary() {
 		log.Fatal(err)
 	}
 	log.Printf("Uploaded %d bytes", n)
-}
-
-func getSelfPath() string {
-	if runtime.GOOS != "linux" {
-		panic("TODO")
-	}
-	v, err := os.Readlink("/proc/self/exe")
-	if err != nil {
-		log.Fatal(err)
-	}
-	return v
 }
 
 func zoneInRegion(zone, regionURL string) bool {

@@ -18,33 +18,50 @@ package xdgdir_test
 
 import (
 	"fmt"
+	"io"
 	"os"
 
 	"go4.org/xdgdir"
 )
 
-func Example() {
+func ExampleDir_Path() {
 	// Print the absolute path of the current user's XDG_CONFIG_DIR.
 	fmt.Println(xdgdir.Config.Path())
+}
 
+func ExampleDir_Open() {
 	// Read a file from $XDG_CONFIG_DIR/myconfig.json.
 	// This will search for a file named "myconfig.json" inside
 	// $XDG_CONFIG_DIR and then each entry inside $XDG_CONFIG_DIRS.
 	// It opens and returns the first file it finds, or returns an error.
-	if f, err := xdgdir.Data.Create("myconfig.json"); err == nil {
-		fmt.Fprintln(f, "Hello, World!")
-		if err := f.Close(); err != nil {
-			fmt.Fprintln(os.Stderr, err)
-		}
-	} else {
+	f, err := xdgdir.Data.Open("myconfig.json")
+	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
+		return
 	}
-
-	// Write a file to $XDG_DATA_DIR/myapp/foo.txt
-	if f, err := xdgdir.Data.Create("myapp/foo.txt"); err == nil {
-		fmt.Fprintln(f, "Hello, World!")
-		f.Close()
-	} else {
+	defer f.Close()
+	// Copy to stdout.
+	if _, err := io.Copy(os.Stdout, f); err != nil {
 		fmt.Fprintln(os.Stderr, err)
+		return
+	}
+}
+
+func ExampleDir_Create() {
+	// Write a file to $XDG_DATA_DIR/myapp/foo.txt
+	f, err := xdgdir.Data.Create("myapp/foo.txt")
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return
+	}
+	_, err = fmt.Fprintln(f, "Hello, World!")
+	cerr := f.Close()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return
+	}
+	if cerr != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return
 	}
 }
